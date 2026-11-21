@@ -28,6 +28,10 @@ export default function Home() {
           <b>{d.conflict_count}</b>
         </div>
         <div className="stat">
+          超额拒绝
+          <b>{d.overage_conflicts}</b>
+        </div>
+        <div className="stat">
           占用中
           <b>{d.live_sessions}</b>
         </div>
@@ -35,7 +39,20 @@ export default function Home() {
           待开窗
           <b>{d.draft_sessions}</b>
         </div>
+        <div className="stat">
+          超额窗（钉扎）
+          <b>{d.overage_windows}</b>
+        </div>
+        <div className="stat">
+          超额在途
+          <b>{d.overage_open}</b>
+        </div>
       </div>
+      <p className="hint">
+        超额口径：{d.overage_mode === "reject" ? "整笔拒绝" : d.overage_mode}；
+        预估并行度 &gt; 额定并发时开窗整笔失败、写超额冲突、零 open、水位不加，
+        故超额窗恒为 0。
+      </p>
     </section>
   );
 }

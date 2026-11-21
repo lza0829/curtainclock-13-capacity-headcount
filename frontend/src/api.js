@@ -22,10 +22,17 @@ export const api = {
   slots: () => req("/slots"),
   executors: () => req("/executors"),
   windows: () => req("/windows"),
+  createWindow: (body) =>
+    req("/windows", { method: "POST", body: JSON.stringify(body) }),
   leases: () => req("/leases"),
   conflicts: () => req("/conflicts"),
   openLease: (window_code) =>
     req("/leases/open", { method: "POST", body: JSON.stringify({ window_code }) }),
   closeLease: (lease_no) =>
     req("/leases/close", { method: "POST", body: JSON.stringify({ lease_no }) }),
+  setCapacity: (code, capacity) =>
+    req(`/slots/${code}/capacity`, {
+      method: "POST",
+      body: JSON.stringify({ capacity }),
+    }),
 };

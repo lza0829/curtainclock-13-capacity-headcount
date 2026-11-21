@@ -25,7 +25,9 @@ export default function Leases() {
     setErr("");
     try {
       const r = await api.closeLease(lease_no);
-      setMsg(`已关窗释放 ${r.lease_no}；在途租约 ${r.open_leases}`);
+      setMsg(
+        `已关窗释放 ${r.lease_no}；在途租约 ${r.open_leases}，超额在途 ${r.overage_open}`
+      );
       await load();
     } catch (e) {
       setErr(e.message);
@@ -37,6 +39,9 @@ export default function Leases() {
       <h2>租约</h2>
       {msg && <div className="msg">{msg}</div>}
       {err && <div className="msg err">{err}</div>}
+      <p className="hint">
+        并行度 / 额定为开窗瞬间快照；之后改额定不改历史租约。
+      </p>
       <table>
         <thead>
           <tr>
@@ -44,6 +49,8 @@ export default function Leases() {
             <th>批窗</th>
             <th>资源</th>
             <th>时段</th>
+            <th>并行度 / 额定</th>
+            <th>超额</th>
             <th>状态</th>
             <th></th>
           </tr>
@@ -58,6 +65,16 @@ export default function Leases() {
               </td>
               <td>
                 {r.day} {fmtMin(r.start_min)}–{fmtMin(r.end_min)}
+              </td>
+              <td>
+                {r.parallelism} / {r.rated_concurrency}
+              </td>
+              <td>
+                {r.overage ? (
+                  <span className="tag bad">钉扎超额</span>
+                ) : (
+                  <span className="tag done">否</span>
+                )}
               </td>
               <td>{r.status === "open" ? "占用中" : "已释放"}</td>
               <td>

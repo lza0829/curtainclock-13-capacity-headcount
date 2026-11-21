@@ -2,6 +2,16 @@ from __future__ import annotations
 
 import sqlite3
 
+# 超额架构（全局唯一贯彻）：整笔拒绝。
+# 预估并行度 > 算力槽额定并发时，开窗整笔失败：写超额冲突、零 open 租约、
+# open_leases 水位不加、批窗与租约都不落 overage 钉扎旗。
+# 因此任一成功路径都满足 parallelism <= rated_concurrency；
+# 总览的“超额窗”永远为 0（只认钉扎旗，而不是重算比较）。
+OVERAGE_MODE = "reject"
+
+ADMISSION_OK = "ok"
+ADMISSION_OVERAGE = "overage"
+
 
 def room_active(conn: sqlite3.Connection, slot_code: str) -> bool:
     row = conn.execute(
@@ -15,6 +25,42 @@ def teacher_active(conn: sqlite3.Connection, executor_code: str) -> bool:
         "SELECT active FROM executors WHERE code=?", (executor_code,)
     ).fetchone()
     return bool(row and row["active"] == 1)
+
+
+def slot_rated_concurrency(
+    conn: sqlite3.Connection, slot_code: str
+) -> int | None:
+    """算力槽额定并发（slots.capacity），开窗裁决与租约快照的唯一来源。"""
+    row = conn.execute(
+        "SELECT capacity FROM slots WHERE code=?", (slot_code,)
+    ).fetchone()
+    return int(row["capacity"]) if row else None
+
+
+def assess_admission(conn: sqlite3.Connection, window: sqlite3.Row) -> dict:
+    """开窗裁决的同源投影：批窗列表、就绪探测、开窗动作共用这一份口径。
+
+    parallelism 取自批窗（预估并行度），rated_concurrency 实时取自算力槽，
+    这样“改额定后行为随臂”：已开租约保留开窗快照，未开批窗按新额定重新裁决。
+    """
+    parallelism = int(window["parallelism"] or 1)
+    rated = slot_rated_concurrency(conn, window["slot_code"])
+    overage = rated is not None and parallelism > rated
+    return {
+        "parallelism": parallelism,
+        "rated_concurrency": rated,
+        "overage": overage,
+        "admission": ADMISSION_OVERAGE if overage else ADMISSION_OK,
+        "overage_mode": OVERAGE_MODE,
+    }
+
+
+def overage_reason(window: sqlite3.Row, assessment: dict) -> str:
+    return (
+        f"预估并行度 {assessment['parallelism']} 超过算力槽 "
+        f"{window['slot_code']} 额定并发 {assessment['rated_concurrency']}，"
+        "超额开窗整笔拒绝"
+    )
 
 
 def overlap(
@@ -48,6 +94,10 @@ def resource_busy(
 
 def readiness(conn: sqlite3.Connection, session: sqlite3.Row) -> dict:
     reasons: list[str] = []
+    assessment = assess_admission(conn, session)
+    if assessment["overage"]:
+        # 超额在拒绝臂下是“未就绪”的一种：批窗列表、就绪探测、开窗动作同源。
+        reasons.append(overage_reason(session, assessment))
     if not room_active(conn, session["slot_code"]):
         reasons.append("算力槽未启用")
     if not teacher_active(conn, session["executor_code"]):

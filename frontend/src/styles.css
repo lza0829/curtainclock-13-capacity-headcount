@@ -122,8 +122,59 @@ a {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.hint {
+  margin: 12px 0 6px;
+  padding: 8px 10px;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: #4b584f;
+  background: #f1f4ef;
+  border-left: 3px solid var(--line);
+  border-radius: 3px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 14px;
+  padding-bottom: 12px;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: #4b584f;
+}
+
+.form-grid input {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fbfcf9;
+  color: var(--ink);
+}
+
+.form-actions {
+  display: flex;
+  align-items: flex-end;
+}
+
+input.narrow {
+  width: 84px;
+  font-family: inherit;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fbfcf9;
+  color: var(--ink);
 }
 
 .stat {
@@ -227,6 +278,9 @@ button:disabled {
 
 @media (max-width: 800px) {
   .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .hero {
